@@ -193,35 +193,32 @@ void error_finding(char **line, int *size) {
 }
 
 double simple_operation(double left_num, double right_num, char operation) {
-
-    double x=0;
+    double x = 0;
 
     if (operation == '+') {
-        x=left_num + right_num;
+        x = left_num + right_num;
+    } else if (operation == '*') {
+        x = left_num * right_num;
+    } else if (operation == '/') {
+        x = left_num / right_num;
+    } else if (operation == '^') {
+        x = pow(left_num, right_num);
     }
-    else if (operation == '*') {
-        x=left_num * right_num;
-    }
-    else if (operation == '/') {
-        x=left_num / right_num;
-    }
-    else if (operation == '^') {
-        x=pow(left_num,right_num);
-    }
+
+    printf("\nleft num: %lf, right num: %lf\nresult: %lf\n\n", left_num, right_num,x);
 
 
     return x;
 }
 
-void parser(char **line, int *size) {
+double parser(char **line, int *size) {
     char *operation_stack = malloc((sizeof(char) * *size) + 1);
     int top_operation_stack = -1;
 
     double *number_stack = malloc((sizeof(double) * *size) + 1);
     int top_number_stack = -1;
 
-    for (int i = 0; i < *size; i++) {
-
+    for (int i = 0; i <= *size; i++) {
         if (isdigit((unsigned char) (*line)[i]) || (*line)[i] == '-') {
             int j = i;
             int k = 0;
@@ -239,13 +236,15 @@ void parser(char **line, int *size) {
             top_number_stack++;
         }
 
-        else if ((*line)[i] == '+' || (*line)[i] == '*' || (*line)[i] == '/' || (*line)[i] == '^' || (*line)[i] =='(') {
+        else if ((*line)[i] == '+' || (*line)[i] == '*' || (*line)[i] == '/' || (*line)[i] == '^' || (*line)[i] ==
+                   '(') {
             printf("\n!!!!!!HELLO0!\n");
             if (top_operation_stack >= 0) {
                 printf("\n!!!!!!HELLO1!\n");
                 char op = operation_stack[top_operation_stack];
 
-                if (((*line)[i] == '+' && (op == '*' || op == '/' || op == '^')) || (((*line)[i] == '*' || (*line)[i] == '/') && op == '^')) {
+                if (((*line)[i] == '+' && (op == '*' || op == '/' || op == '^')) || (
+                        ((*line)[i] == '*' || (*line)[i] == '/') && op == '^')) {
                     printf("\n!!!!!!HELLO2!\n");
                     //simulating popping even tho unecesary this will become a genral function later on so keeping convention alive
                     char pop_buffer = operation_stack[top_operation_stack];
@@ -258,8 +257,8 @@ void parser(char **line, int *size) {
                     top_operation_stack++;
 
 
-                    if (isdigit((unsigned char) (*line)[i+1]) || (*line)[i+1] == '-') {
-                        int j = i+1;
+                    if (isdigit((unsigned char) (*line)[i + 1]) || (*line)[i + 1] == '-') {
+                        int j = i + 1;
                         int k = 0;
                         char *number_buffer = malloc((sizeof(char) * *size) + 1);
 
@@ -288,26 +287,40 @@ void parser(char **line, int *size) {
 
                         i = j - 1;
                     }
-                }
-                else {
+                } else {
                     operation_stack[top_operation_stack + 1] = (*line)[i];
                     top_operation_stack++;
                 }
-
-            }
-            else {
+            } else {
                 operation_stack[top_operation_stack + 1] = (*line)[i];
                 top_operation_stack++;
             }
-
         }
 
         else if ((*line)[i] == ')' || (*line)[i] == '\0') {
             // pop operation 1= op
-            // pop num 1 =x
-            // pop num 2 =y
-            // call simple z=operation(x,y,op)
-            //push z into num stack
+
+            while (operation_stack[top_operation_stack] != '(' && operation_stack[top_operation_stack+1] != '\0') {
+                char op = operation_stack[top_operation_stack];
+                operation_stack[top_operation_stack] = '\0';
+                top_operation_stack--;
+                printf("\nop stack top %c \n",operation_stack[top_operation_stack+1]);
+
+                // pop num 1 =x
+                double right_num = number_stack[top_number_stack];
+                top_number_stack--;
+
+                // pop num 2 =y
+                double left_num = number_stack[top_number_stack];
+                top_number_stack--;
+
+                // call simple z=operation(y,x,op)
+                double z = simple_operation(left_num, right_num, op);
+
+                //push z into num stack
+                number_stack[top_number_stack + 1] = z;
+                top_number_stack++;
+            }
             //repeat until we pop ( or op stacks is empty (num stack should have only the final result left)
             //dont forget to make this function into a double return value when over
         }
@@ -323,6 +336,9 @@ void parser(char **line, int *size) {
     for (int i = 0; i < top_operation_stack + 1; i++) {
         printf("%c", operation_stack[i]);
     }
+
+    double result = number_stack[top_number_stack];
+    return result;
 }
 
 /*
@@ -345,7 +361,9 @@ int main() {
     string_enrich(&line, &size);
     //error_finding(&line, &size);
 
-    parser(&line, &size);
+    double result = parser(&line, &size);
+
+    printf("\nThe result of your operation is:\n%lf", result);
 
     //printf("\nthis is new size: %d", size);
 
